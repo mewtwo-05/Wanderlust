@@ -5,8 +5,14 @@ const mapToken = process.env.MAP_TOKEN;
 const geocodingClient = mbxGeocoding({ accessToken: mapToken });
 
 module.exports.index = async (req, res) => {
-    const allListings = await Listing.find({});
-    res.render("./listings/index.ejs", {allListings});
+    const { category } = req.query; //Get category from query params
+    let filter = {}; //Default: show all listings
+    if (category) {
+        filter.category = { $regex: new RegExp("^" + category + "$", "i") }; //Apply category filter
+    }
+
+    const allListings = await Listing.find(filter);
+    res.render("./listings/index.ejs", { allListings, category });
 };
 
 module.exports.renderNewForm = (req, res) => {
@@ -49,6 +55,7 @@ module.exports.createListing = async (req,res,next) => {
     newListing.owner = req.user._id;
     newListing.image = {url, filename};
     newListing.geometry = response.body.features[0].geometry;
+    newListing.category = req.body.listing.category; //Assigning category
     let savedListing = await newListing.save();
     console.log(savedListing);
     req.flash("success", "New listing Created!");
