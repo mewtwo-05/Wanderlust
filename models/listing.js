@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 const Review = require("./review.js");
+const Reservation = require("./reservation.js")
 const { type } = require("os");
 const { string, required } = require("joi");
 
@@ -45,6 +46,12 @@ const listingSchema = new Schema({
             required: true,
         },
     },
+    reservations : [
+        {
+            type: Schema.Types.ObjectId,
+            ref: "Reservation" // Link to the reservation model
+        }
+    ]
 });
 
 listingSchema.post("findOneAndDelete", async (listing) => {

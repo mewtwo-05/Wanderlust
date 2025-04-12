@@ -1,0 +1,108 @@
+
+<% layout("/layouts/boilerplate.ejs") %>
+<div class="reservation-card">
+    <h4>₹<%= listing.price %> <span style="font-weight: 400;">night</span></h4>
+
+    <form id="reservation-form" class="needs-validation">
+        <div class="mb-3">
+            <label class="form-label">Check-in</label>
+            <input type="date" name="checkin" id="checkin" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Check-out</label>
+            <input type="date" name="checkout" id="checkout" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Guests</label>
+            <select name="guests" id="guests" class="form-select">
+                <option value="1">1 guest</option>
+                <option value="2">2 guests</option>
+                <option value="3">3 guests</option>
+                <option value="4">4 guests</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" id="email" class="form-control" required>
+        </div>        
+
+        <div id="price-details" class="mb-3">
+            <p><strong>₹<%= listing.price %></strong> x <span id="numNights">0</span> nights = <strong id="totalPrice">₹0</strong></p>
+        </div>
+
+        <div id="card-element" class="mb-3">
+            <!-- Stripe Card Element will be inserted here -->
+        </div>
+        <div id="card-errors" class="text-danger mb-3"></div>
+
+        <button type="submit" class="reserve-btn">Pay and Reserve</button>
+    </form>
+</div>
+
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+    const stripe = Stripe('<%= process.env.STRIPE_PUBLISHABLE_KEY %>');
+    const elements = stripe.elements();
+    const card = elements.create('card');
+    card.mount('#card-element');
+
+    const form = document.getElementById('reservation-form');
+    const pricePerNight = <%= listing.price %>;
+
+    function calculatePrice() {
+        const checkin = new Date(document.getElementById('checkin').value);
+        const checkout = new Date(document.getElementById('checkout').value);
+        if (checkin && checkout && checkout > checkin) {
+            const timeDiff = checkout.getTime() - checkin.getTime();
+            const numNights = Math.ceil(timeDiff / (1000 * 3600 * 24));
+            document.getElementById('numNights').innerText = numNights;
+            const total = pricePerNight * numNights;
+            document.getElementById('totalPrice').innerText = `₹${total}`;
+            return total;
+        }
+        return 0;
+    }
+
+    document.getElementById('checkin').addEventListener('change', calculatePrice);
+    document.getElementById('checkout').addEventListener('change', calculatePrice);
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const total = calculatePrice();
+        
+        const { token, error } = await stripe.createToken(card);
+        
+        if (error) {
+            const errorElement = document.getElementById('card-errors');
+            errorElement.textContent = error.message;
+            return;
+        }
+
+        // Create reservation
+        const response = await fetch('/listings/<%= listing._id %>/reservation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                checkin: document.getElementById('checkin').value,
+                checkout: document.getElementById('checkout').value,
+                guests: document.getElementById('guests').value,
+                email: document.getElementById('email').value,
+                paymentToken: token.id,
+                amount: total
+            })
+        });
+
+        if (response.ok) {
+            window.location.href = `/listings/<%= listing._id %>`;
+        } else {
+            const data = await response.json();
+            const errorElement = document.getElementById('card-errors');
+            errorElement.textContent = data.message || 'Something went wrong';
+        }
+    });
+</script>

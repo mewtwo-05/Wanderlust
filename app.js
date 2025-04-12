@@ -4,6 +4,7 @@ if(process.env.NODE_ENV != "production") {
 
 const express = require("express");
 const app = express();
+require('dotenv').config();
 const mongoose = require("mongoose");
 const Listing = require("./models/listing.js");
 const Review = require("./models/review.js");
@@ -24,6 +25,7 @@ const listingRouter = require("./routes/listing.js");
 const reviewRouter = require("./routes/review.js");
 const userRouter = require("./routes/user.js");
 const searchRoutes = require("./routes/search.js");
+// const reservationRoutes = require("./routes/reservation");
 
 
 // const MONGO_URL = "mongodb://127.0.0.1:27017/wanderlust";
@@ -47,6 +49,9 @@ app.use(express.urlencoded({extended: true}));
 app.use(methodOverride("_method"));
 app.engine("ejs", ejsMate);
 app.use(express.static(path.join(__dirname, "/public")));
+app.use(express.json());
+
+
 
 //It is used to store the session information in atlas database
 const store = MongoStore.create({
@@ -114,6 +119,10 @@ app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewRouter);
 app.use("/search", searchRoutes);
 app.use("/", userRouter);
+// app.use("/reservation", reservationRoutes);
+
+const stripeRoutes = require('./controllers/stripe.js');
+app.use('/api/stripe', stripeRoutes);
 
 // app.get("/testListing", async (req, res) => {
 //     let sampleListing = new Listing({

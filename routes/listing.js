@@ -1,12 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const Listing = require("../models/listing.js");
+const Reservation = require("../models/reservation.js");
 const wrapAsync = require("../utils/wrapAsync.js");
 const {isLoggedIn, isOwner, validateListing} = require("../middleware.js");
 const listingController  = require("../controllers/listings.js");
 const multer = require("multer");
 const { storage } = require("../cloudConfig.js");
 const upload = multer({ storage }); 
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 //Index,Create
 router.route("/")
@@ -36,6 +38,13 @@ router.route("/:id")
 
 //Edit Route
 router.get("/:id/edit", isLoggedIn, isOwner,wrapAsync(listingController.renderEditForm));
+
+// Route to render the reservation form
+router.get("/:id/reservation", isLoggedIn, wrapAsync(listingController.renderReservationForm));
+
+// Route to handle reservation submission
+router.post("/:id/reservation", isLoggedIn, wrapAsync(listingController.createReservation));
+
 
 //Update Route
 // router.put("/:id", isLoggedIn, isOwner,validateListing, wrapAsync(listingController.updateListing));
