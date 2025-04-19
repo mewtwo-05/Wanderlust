@@ -1,11 +1,16 @@
-const { response } = require("express");
+const { express } = require("express");
 const Listing = require("../models/listing");
 const Reservation = require("../models/reservation.js");
 const mbxGeocoding = require("@mapbox/mapbox-sdk/services/geocoding");
 const mapToken = process.env.MAP_TOKEN;
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const geocodingClient = mbxGeocoding({ accessToken: mapToken });
-const { sendConfirmationEmail } = require("../utils/mailer.js").default; // Adjust path as needed
+const nodemailer = require("nodemailer");
+// const { sendConfirmationEmail } = require("../utils/mailer.js"); // Adjust path as needed
+// import { sendConfirmationEmail } from "../utils/mailer.js";
+const { sendConfirmationEmail } = require("../utils/mailer.js");
+
+
 
 module.exports.index = async (req, res) => {
     const { category } = req.query; //Get category from query params
@@ -189,10 +194,27 @@ module.exports.createReservation = async (req, res) => {
             return res.status(400).json({ message: 'Invalid totalAmount provided' });
         }
 
-        // ✅ Check for overlapping reservations
+        // Check for overlapping reservations
         const newCheckin = new Date(checkin);
         const newCheckout = new Date(checkout);
+        const today = new Date();
+        today.setHours(0,0,0,0); //remove time part 
 
+        // Validation: Checkin and checkout must not be in the past
+        if (newCheckin < today || newCheckout < today) {
+            return res.status(400).json({
+                message: 'Check-in and check-out dates must be today or in the future'
+            });
+        }
+
+        // Validation: Check-in and check-out must not be the same
+        if (newCheckin.toDateString() === newCheckout.toDateString()) {
+            return res.status(400).json({
+                message: 'Check-in and check-out dates cannot be the same'
+            });
+        }
+
+        // Validation: check for overlapping reservations
         const overlappingReservation = await Reservation.findOne({
             listing: id,
             $or: [
@@ -202,6 +224,15 @@ module.exports.createReservation = async (req, res) => {
                 }
             ]
         });
+
+        // Validate max 10-night stay
+        const diffInTime = newCheckout.getTime() - newCheckin.getTime();
+        const numNights = Math.ceil(diffInTime / (1000 * 3600 * 24));
+        if (numNights > 10) {
+            return res.status(400).json({
+                message: 'You can only book a stay for up to 10 nights'
+            });
+        }
 
         if (overlappingReservation) {
             return res.status(400).json({
@@ -221,7 +252,7 @@ module.exports.createReservation = async (req, res) => {
             return res.status(400).json({ message: 'Payment failed' });
         }
 
-        // Create Reservation
+        // Save Reservation
         const reservation = await Reservation.create({
             listing: id,
             user: req.user._id,
@@ -249,4 +280,41 @@ module.exports.createReservation = async (req, res) => {
         console.error(error);
         return res.status(500).json({ message: 'Server error' });
     }
+};
+
+module.exports.getMyReservations = async (req, res) => {
+    const reservations = await Reservation.find({ user: req.user._id }).populate("listing");
+    res.render("listings/myReservation.ejs", { reservations });
+};
+
+module.exports.cancelReservation = async (req, res) => {
+    const { id, reservationId } = req.params;
+    const reservation = await Reservation.findById(reservationId).populate("user");
+
+    if (!reservation) {
+        req.flash("error", "Reservation not found.");
+        return res.redirect("/listings");
+    }
+
+    // Ensure only the reservation owner can cancel
+    if (!reservation.user.equals(req.user._id)) {
+        req.flash("error", "You are not authorized to cancel this reservation.");
+        return res.redirect("/listings");
+    }
+
+    const userEmail = reservation.user.email; // ✅ Make sure email exists
+    if (userEmail) {
+        await sendConfirmationEmail(
+            userEmail,
+            "Reservation Cancelled",
+            `Your reservation for listing ID ${reservation.listing} has been successfully cancelled.`
+        );
+    } else {
+        console.warn("No email found for user, skipping cancellation email.");
+    }
+
+    await Reservation.findByIdAndDelete(reservationId);
+
+    req.flash("success", "Reservation cancelled successfully.");
+    res.redirect("/listings");
 };

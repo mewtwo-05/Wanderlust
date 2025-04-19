@@ -46,6 +46,12 @@ router.get("/:id/reservation", isLoggedIn, wrapAsync(listingController.renderRes
 router.post("/:id/reservation", isLoggedIn, wrapAsync(listingController.createReservation));
 
 
+// Route for myReservation
+router.get("/my/reservations", isLoggedIn, wrapAsync(listingController.getMyReservations));
+
+// Cancel Reservation
+router.delete("/:id/reservations/:reservationId", isLoggedIn, wrapAsync(listingController.cancelReservation));
+
 //Update Route
 // router.put("/:id", isLoggedIn, isOwner,validateListing, wrapAsync(listingController.updateListing));
 

@@ -34,8 +34,11 @@
       <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
         <div class="navbar-nav">
             <a class="nav-link" href="/listings">Explore</a>
+            <% if(currUser) { %>
+              <span class="nav-link text-dark fw-bold">Welcome, <%= currUser.username %></span>
+            <% } %>
         </div>
-
+        
         <div class="navbar-nav ms-auto">
           <form class="d-flex" role="search" action="/search" method="get">
             <input class="form-control me-2 search-inp" type="text" name="query" placeholder="Search destinations" required/>
@@ -50,6 +53,7 @@
             <a class="nav-link" href="/login"><b>Log In</b></a>
           <% } %>
           <% if(currUser) { %>
+            <a class="nav-link" href="/listings/my/reservations">My Reservations</a>
             <a class="nav-link" href="/logout">Log Out</a>
           <% } %>
         </div>

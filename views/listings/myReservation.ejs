@@ -1,0 +1,38 @@
+<% layout("/layouts/boilerplate") %>
+
+<div class="container my-5">
+    <h2 class="mb-4">My Reservations</h2>
+
+    <% if (reservations.length === 0) { %>
+        <div class="alert alert-info">
+            You have no reservations yet. Go explore some listings!
+        </div>
+    <% } else { %>
+        <div class="row row-cols-1 row-cols-md-2 g-4">
+            <% reservations.forEach(reservation => { %>
+                <div class="col">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title"><%= reservation.listing.title %></h5>
+                            <p class="card-text">
+                                <strong>Check-in:</strong> <%= reservation.checkin.toDateString() %><br>
+                                <strong>Check-out:</strong> <%= reservation.checkout.toDateString() %><br>
+                                <strong>Guests:</strong> <%= reservation.guests %><br>
+                                <strong>Amount Paid:</strong> ₹<%= reservation.amount %>
+                            </p>
+
+                            <!-- <form action="/reservations/<%= reservation._id %>/cancel?_method=DELETE" method="POST" onsubmit="return confirm('Are you sure you want to cancel this reservation?')">
+                                <button class="btn btn-danger btn-sm">Cancel Reservation</button>
+                            </form> -->
+
+                            <form action="/listings/<%= reservation.listing._id %>/reservations/<%= reservation._id %>?_method=DELETE" method="POST">
+                                <button class="btn btn-sm btn-danger">Cancel Reservation</button>
+                            </form>
+                              
+                        </div>
+                    </div>
+                </div>
+            <% }) %>
+        </div>
+    <% } %>
+</div>

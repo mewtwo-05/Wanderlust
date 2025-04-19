@@ -53,18 +53,32 @@
     const pricePerNight = <%= listing.price %>;
 
     function calculatePrice() {
-        const checkin = new Date(document.getElementById('checkin').value);
-        const checkout = new Date(document.getElementById('checkout').value);
-        if (checkin && checkout && checkout > checkin) {
-            const timeDiff = checkout.getTime() - checkin.getTime();
-            const numNights = Math.ceil(timeDiff / (1000 * 3600 * 24));
-            document.getElementById('numNights').innerText = numNights;
-            const total = pricePerNight * numNights;
-            document.getElementById('totalPrice').innerText = `₹${total}`;
-            return total;
+    const checkin = new Date(document.getElementById('checkin').value);
+    const checkout = new Date(document.getElementById('checkout').value);
+    const errorElement = document.getElementById('card-errors');
+
+    if (checkin && checkout && checkout > checkin) {
+        const timeDiff = checkout.getTime() - checkin.getTime();
+        const numNights = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+        // Max 10-day validation
+        if (numNights > 10) {
+            errorElement.textContent = "You can only book a stay for up to 10 nights.";
+            document.getElementById('totalPrice').innerText = `₹0`;
+            document.getElementById('numNights').innerText = `0`;
+            return 0;
+        } else {
+            errorElement.textContent = ""; // clear any previous error
         }
-        return 0;
+
+        document.getElementById('numNights').innerText = numNights;
+        const total = pricePerNight * numNights;
+        document.getElementById('totalPrice').innerText = `₹${total}`;
+        return total;
     }
+
+    return 0;
+}
 
     document.getElementById('checkin').addEventListener('change', calculatePrice);
     document.getElementById('checkout').addEventListener('change', calculatePrice);

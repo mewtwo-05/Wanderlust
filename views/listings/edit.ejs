@@ -43,6 +43,25 @@
             <input name="listing[location]" value="<%=listing.location%>" type="text" class="form-control" required/>
             <div class="invalid-feedback">Location should be valid</div>
         </div>
+
+        <div class="mb-3">
+            <label for="category" class="form-label">Category</label>
+            <select name="listing[category]" class="form-control" required>
+                <option value="">-- Select a Category --</option>
+                <option value="Trending">Trending 🔥</option>
+                <option value="Rooms">Rooms🛏️</option>
+                <option value="Iconic Cities">Iconic Cities🏙️</option>
+                <option value="Mountain">Mountain⛰️</option>
+                <option value="Castles">Castles🏰</option>
+                <option value="Amazing Pools">Amazing Pools🏊 </option>
+                <option value="Camping">Camping⛺</option>
+                <option value="Farms">Farms🌿</option>
+                <option value="Arctic">Arctic❄️</option>
+                <option value="Domes">Domes🏠</option>
+                <option value="Boats">Boats🚤</option>
+            </select>
+            <div class="invalid-feedback">Please select a category</div>
+        </div>
         
         <button class="btn btn-dark mt-3 edit-btn ">Edit</button>
     </form>

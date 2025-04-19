@@ -16,4 +16,3 @@ router.route("/")
 
 module.exports = router;
 
-//This is only make the code more readable or stuctural and organized format.
